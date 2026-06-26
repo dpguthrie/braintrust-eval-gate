@@ -1,0 +1,41 @@
+name: Braintrust eval gate
+
+# Run on every PR. (If you scope this with `paths:`, read the "required check
+# that never runs" gotcha in the README before marking the check required.)
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  pull-requests: write   # so the action can post/update the results comment
+  contents: read
+
+jobs:
+  eval-gate:
+    name: eval-gate        # <-- mark THIS name as a required status check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run evals + gate
+        uses: braintrustdata/eval-action@v1
+        with:
+          api_key: ${{ secrets.BRAINTRUST_API_KEY }}
+          runtime: python
+          # The gate Reporter is registered inside the eval files, so a
+          # below-threshold result makes `braintrust eval` exit non-zero,
+          # which fails this job, which blocks the merge when required.
+          paths: evals
+          use_proxy: "false"   # this example task makes no LLM calls

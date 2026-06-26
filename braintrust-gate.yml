@@ -1,0 +1,38 @@
+# Braintrust eval gate policy.
+#
+# This file is the declarative "quality bar" for merges. Own it like you own
+# your branch-protection rules. The gate reporter (braintrust_gate/reporter.py)
+# reads it and fails the eval run — and therefore the PR's required status
+# check — when any rule is violated.
+
+# How to react to a violation: "block" (fail the check, blocks merge) or
+# "warn" (annotate the PR but let it pass). Start in "warn" while you calibrate
+# thresholds, then switch to "block".
+on_violation: block
+
+# Pin the experiment the diffs are computed against (your main-branch experiment).
+# Informational here; set base_experiment_name in your Eval() to enforce it.
+baseline: main
+
+# ---- Score "monitors": minimum quality bars on specific properties ----
+# `min`: absolute floor on the average score (0..1).
+# `max_regression_pp`: max allowed drop vs the baseline, in percentage points.
+scores:
+  Levenshtein:
+    min: 0.60
+    max_regression_pp: 5
+  # Factuality:       { min: 0.90, max_regression_pp: 2 }
+  # Safety:           { min: 0.99 }
+  # ContextRelevancy: { min: 0.85 }
+
+# ---- Metric "performance monitors": latency / cost / tokens ----
+# `max`: absolute ceiling in the metric's own units.
+# `max_increase`: max allowed worsening vs the baseline, same units.
+metrics:
+  duration:
+    max: 5.0          # seconds (p50)
+    max_increase: 1.0
+  # estimated_cost:   { max_increase: 0.01 }   # $ per case
+
+# TIP: to *see the gate block a merge*, lower a score min above your current
+# score (e.g. set Levenshtein.min to 0.99) and open a PR — the check goes red.
